@@ -1,98 +1,132 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { router, Stack } from 'expo-router';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
+import { IconButton } from '@/components/icon-button';
+import { ManhwaCard } from '@/components/manhwa-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
+import { useLibrary } from '@/store/library-store';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
+export default function LibraryScreen() {
+  const theme = useTheme();
+  const { ready, manhwas, createManhwa } = useLibrary();
+
+  const onCreate = () => {
+    const manhwa = createManhwa();
+    router.push({ pathname: '/manhwa/[id]', params: { id: manhwa.id } });
+  };
+
+  if (!ready) {
     return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
+      <ThemedView style={styles.centered}>
+        <ActivityIndicator />
+      </ThemedView>
     );
   }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
 
-export default function HomeScreen() {
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <View style={styles.headerActions}>
+              <IconButton
+                name="settings-outline"
+                accessibilityLabel="Settings"
+                onPress={() => router.push('/settings')}
+              />
+              <IconButton
+                name="add-circle-outline"
+                accessibilityLabel="Create new"
+                color="#3c87f7"
+                size={28}
+                onPress={onCreate}
+              />
+            </View>
+          ),
+        }}
+      />
+      <SafeAreaView edges={['bottom']} style={styles.safe}>
+        {manhwas.length === 0 ? (
+          <View style={styles.empty}>
+            <Ionicons name="library-outline" size={56} color={theme.textSecondary} />
+            <ThemedText type="subtitle" style={styles.emptyTitle}>
+              Your library is empty
+            </ThemedText>
+            <ThemedText themeColor="textSecondary" style={styles.emptyBody}>
+              Create a manhwa card, then import a folder of .mht chapters.
+            </ThemedText>
+            <Pressable
+              onPress={onCreate}
+              style={[styles.primaryButton, { backgroundColor: '#3c87f7' }]}>
+              <Ionicons name="add" size={22} color="#fff" />
+              <ThemedText style={styles.primaryLabel}>New manhwa</ThemedText>
+            </Pressable>
+          </View>
+        ) : (
+          <FlatList
+            data={manhwas}
+            keyExtractor={(item) => item.id}
+            numColumns={2}
+            columnWrapperStyle={styles.row}
+            contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <View style={styles.cardSlot}>
+                <ManhwaCard
+                  manhwa={item}
+                  onPress={() =>
+                    router.push({ pathname: '/manhwa/[id]', params: { id: item.id } })
+                  }
+                />
+              </View>
+            )}
           />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
+        )}
       </SafeAreaView>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1 },
+  safe: { flex: 1 },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  list: {
+    paddingHorizontal: Spacing.two,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.six,
+  },
+  row: {
+    gap: Spacing.two,
+    marginBottom: Spacing.two,
+    paddingHorizontal: Spacing.one,
+  },
+  cardSlot: {
     flex: 1,
+    maxWidth: '50%',
+  },
+  empty: {
+    flex: 1,
+    alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: Spacing.four,
+    gap: Spacing.three,
+  },
+  emptyTitle: { textAlign: 'center', fontSize: 24, lineHeight: 30 },
+  emptyBody: { textAlign: 'center', marginBottom: Spacing.two },
+  primaryButton: {
     flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
     alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
+    gap: 8,
     paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+    paddingVertical: Spacing.three,
+    borderRadius: 999,
   },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
+  primaryLabel: { fontWeight: '700', color: '#fff' },
 });
