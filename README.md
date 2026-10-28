@@ -88,6 +88,58 @@ Change text in `src/app/index.tsx`, save, and the phone should refresh automatic
 
 ---
 
+## Build an Android APK with EAS
+
+Expo Go is for development. To install a standalone **APK** on an Android phone (no Expo Go needed), use [EAS Build](https://docs.expo.dev/build/introduction/). This project’s `eas.json` already sets `android.buildType` to `"apk"` for the `development`, `preview`, and `production` profiles.
+
+### 1. Keep the lockfile in sync
+
+EAS runs `npm ci`, so `package.json` and `package-lock.json` must match:
+
+```bash
+npm install
+```
+
+If you change dependencies, commit the updated `package-lock.json` before building.
+
+### 2. Log in to Expo
+
+```bash
+npx eas-cli@latest login
+```
+
+### 3. Start an APK build (cloud)
+
+**Internal / shareable APK (recommended for testing):**
+
+```bash
+npx eas-cli@latest build --platform android --profile preview
+```
+
+**Production APK:**
+
+```bash
+npx eas-cli@latest build --platform android --profile production
+```
+
+The first Android build may ask you to create or reuse a keystore — follow the prompts (or use the Expo-managed keystore).
+
+### 4. Download and install
+
+1. Wait for the build to finish (link printed in the terminal, also on [expo.dev](https://expo.dev)).
+2. Download the **.apk**.
+3. On the phone, open the file and allow install from that source if asked.
+
+### Optional: local APK (needs Android Studio / SDK)
+
+```bash
+npx expo run:android --variant release
+```
+
+Docs: [EAS Build](https://docs.expo.dev/build/introduction/) · [Android build types (APK vs AAB)](https://docs.expo.dev/build-reference/android-builds/)
+
+---
+
 ## Troubleshooting
 
 | Problem | What to try |
@@ -98,6 +150,7 @@ Change text in `src/app/index.tsx`, save, and the phone should refresh automatic
 | Expo Go version mismatch | Update Expo Go from the store |
 | App does not refresh | Shake phone → developer menu → Fast Refresh on |
 | Missing packages | `npm install`, then `npx expo start` |
+| EAS `npm ci` lockfile error | Run `npm install`, ensure `package-lock.json` is updated, then rebuild |
 
 ---
 
@@ -108,6 +161,8 @@ npx expo start            # QR code / Expo Go
 npx expo start --android  # emulator / USB (needs Android tools)
 npx expo start --ios      # simulator (macOS + Xcode)
 npx expo start --web      # browser
+npx eas-cli@latest build --platform android --profile preview      # cloud APK (test)
+npx eas-cli@latest build --platform android --profile production  # cloud APK (prod)
 ```
 
 Docs: [Start developing](https://docs.expo.dev/get-started/start-developing/) · [Environment setup](https://docs.expo.dev/get-started/set-up-your-environment/)
